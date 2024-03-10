@@ -1,25 +1,61 @@
-package bounds;
+package chatpanel;
 
-public class Panels extends javax.swing.JFrame {
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.Socket;
+
+public class ChatPanel extends javax.swing.JFrame {
+
     String msg;
     String str;
-    String s = "";
+    String s;
+    String messageInTopPanel;
+    BufferedWriter writer;
+    BufferedReader reader;
+    Socket sock;
 
-   
-    public Panels(){
+    public ChatPanel() throws IOException {
+        messageInTopPanel = "";
         initComponents();
-       
+        sock = new Socket("localhost", 30333);
+        writer = new BufferedWriter(
+                new OutputStreamWriter(sock.getOutputStream()));
+        reader = new BufferedReader(
+                new InputStreamReader(sock.getInputStream()));
+        readMessage();
     }
-   
-    
-    void setTextInJTop(){ 
-           
+
+    void setTextInJTop() throws IOException {
         str = jText.getText();
-        s = s + str +"\n";
-        jTop.setText(s);
+        s = "" + str;
+        // jTop.setText(s);
+        writer.write(s);
+        writer.newLine();
+        writer.flush();
+        messageInTopPanel = messageInTopPanel + s + "\n";
+        jTop.setText(messageInTopPanel);
         jText.setText("");
-      
-}          
+
+    }
+
+    final void readMessage() {
+        new Thread(() -> {
+            String messageInDownPanel = "";
+            while (true) {
+                try {
+                    msg = reader.readLine();
+                } catch (IOException ex) {
+                    System.out.println(ex);
+                }
+                messageInDownPanel += msg + "\n";
+                jDown.setText(messageInDownPanel);
+            }
+        }).start();
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -50,9 +86,13 @@ public class Panels extends javax.swing.JFrame {
         });
 
         jDown.setEditable(false);
+        jDown.setFont(new java.awt.Font("Liberation Sans", 0, 14)); // NOI18N
+        jDown.setForeground(new java.awt.Color(102, 0, 102));
         jScrollPane1.setViewportView(jDown);
 
         jTop.setEditable(false);
+        jTop.setFont(new java.awt.Font("Liberation Sans", 0, 14)); // NOI18N
+        jTop.setForeground(new java.awt.Color(0, 102, 0));
         jScrollPane2.setViewportView(jTop);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -87,20 +127,29 @@ public class Panels extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void But(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_But
-        
+
+        try {
+
             setTextInJTop();
-        
+
+        } catch (IOException ex) {
+            System.out.println(ex);
+        }
+
     }//GEN-LAST:event_But
- 
-    public static void  main(String[] args){
+
+    public static void main(String[] args) {
         java.awt.EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                
-                    new Panels().setVisible(true);    
+
+                try {
+                    new ChatPanel().setVisible(true);
+                } catch (IOException ex) {
+                }
             }
         });
-        
+
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
